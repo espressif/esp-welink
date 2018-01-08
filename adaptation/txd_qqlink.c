@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2017 <ESPRESSIF SYSTEMS (SHANGHAI) PTE LTD>
  *
- * Permission is hereby granted for use on ESPRESSIF SYSTEMS ESP32 only, in which case,
+ * Permission is hereby granted for use on ESPRESSIF SYSTEMS chips only, in which case,
  * it is free of charge, to any person obtaining a copy of this software and associated
  * documentation files (the "Software"), to deal in the Software without restriction, including
  * without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
@@ -22,9 +22,7 @@
  *
  */
 
-#include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 #include "esp_wifi.h"
 
 #include "txd_stdapi.h"
@@ -37,24 +35,29 @@
 */
 void txd_set_qq_link_channel(int32_t nchannel)
 {
-    static wifi_second_chan_t second_ch = WIFI_SECOND_CHAN_NONE; //0,1,2
-    esp_wifi_set_channel(nchannel, second_ch);
+    esp_wifi_set_channel(nchannel, WIFI_SECOND_CHAN_NONE);
 }
+
 /**
-*  qq_link 完成后回调,需要厂商自己实现，主要是连接路由器
-*  pqq_link_param     :   包含路由器SSID和密码信息；回调结束后会被销毁。
+**  qq_link完成后的回调，需要厂商自己实现，用来连接路由器
+* @param result 包含路由器SSID和密码信息；回调结束后会被销毁。
 */
-void txd_on_qq_link_notify(txd_qq_link_result_t* pqq_link_param)
+void txd_qq_link_complete(txd_qq_link_result_t* result)
 {
     wifi_config_t wifi_config;
 
-    if ((pqq_link_param == NULL) || (pqq_link_param->ssid == NULL)) {
+    if ((result == NULL) || (result->ssid == NULL)) {
         return ;
     }
 
     memset(&wifi_config, 0, sizeof(wifi_config_t));
-    memcpy(wifi_config.sta.ssid, pqq_link_param->ssid, txd_strlen((char*)(pqq_link_param->ssid)));
-    memcpy(wifi_config.sta.password, pqq_link_param->password, txd_strlen((char*)(pqq_link_param->password)));
+
+    if ((txd_strlen((char*)(result->ssid)) > sizeof(wifi_config.sta.ssid)) || (txd_strlen((char*)(result->password)) > sizeof(wifi_config.sta.password))) {
+        return;
+    }
+
+    memcpy(wifi_config.sta.ssid, result->ssid, txd_strlen((char*)(result->ssid)));
+    memcpy(wifi_config.sta.password, result->password, txd_strlen((char*)(result->password)));
 
     esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config);
     esp_wifi_connect();
