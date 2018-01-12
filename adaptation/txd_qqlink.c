@@ -28,6 +28,9 @@
 #include "txd_stdapi.h"
 #include "txd_baseapi.h"
 #include "txd_qq_link.h"
+#include "esp_qqiot_log.h"
+
+static const char* TAG = "txd_qqlink";
 
 /**
 *  设置当前抓包的频道，由厂商实现（注：不一定非要在此函数返回前切换频道，也可以设置值在其他地方检测到改变再调频）
@@ -35,6 +38,7 @@
 */
 void txd_set_qq_link_channel(int32_t nchannel)
 {
+    QQIOT_LOGD("set wifi sniffer channel: channel_num = %d", nchannel);
     esp_wifi_set_channel(nchannel, WIFI_SECOND_CHAN_NONE);
 }
 
@@ -47,12 +51,14 @@ void txd_qq_link_complete(txd_qq_link_result_t* result)
     wifi_config_t wifi_config;
 
     if ((result == NULL) || (result->ssid == NULL)) {
+        QQIOT_LOGE("the parameter is incorrect");
         return ;
     }
 
     memset(&wifi_config, 0, sizeof(wifi_config_t));
 
     if ((txd_strlen((char*)(result->ssid)) > sizeof(wifi_config.sta.ssid)) || (txd_strlen((char*)(result->password)) > sizeof(wifi_config.sta.password))) {
+        QQIOT_LOGE("the length of ssid or password is too long");
         return;
     }
 

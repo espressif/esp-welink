@@ -24,6 +24,9 @@
 
 #include <sys/socket.h>
 #include "txd_baseapi.h"
+#include "esp_qqiot_log.h"
+
+static const char* TAG = "txd_socket";
 
 /************************** tcp socket接口 接入厂商实现 *****************************/
 /*
@@ -61,16 +64,19 @@ int32_t txd_tcp_connect(txd_socket_handler_t* sock, uint8_t* ip, uint16_t port, 
     struct timeval timeout = {0, 0};
 
     if ((sock == NULL) || (ip == NULL)) {
+        QQIOT_LOGE("the parameter is incorrect");
         return ret;
     }
 
     sock->fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     if (sock->fd < 0) {
+        QQIOT_LOGE("create socket fail");
         return ret;
     }
 
     if (setsockopt(sock->fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) != 0) {
+        QQIOT_LOGE("set socket opt fail");
         return ret;
     }
 
@@ -78,6 +84,7 @@ int32_t txd_tcp_connect(txd_socket_handler_t* sock, uint8_t* ip, uint16_t port, 
     timeout.tv_usec = ((timeout_ms % 1000) * 1000);
 
     if (setsockopt(sock->fd, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof(struct timeval)) != 0) {
+        QQIOT_LOGE("set socket opt fail");
         return ret;
     }
 
@@ -86,6 +93,7 @@ int32_t txd_tcp_connect(txd_socket_handler_t* sock, uint8_t* ip, uint16_t port, 
     inet_aton((char*)ip, &(addr.sin_addr.s_addr));
 
     if (connect(sock->fd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+        QQIOT_LOGE("socket connect fail");
         return ret;
     }
 
@@ -104,6 +112,7 @@ int32_t txd_tcp_disconnect(txd_socket_handler_t* sock)
     int32_t ret = -1;
 
     if (sock == NULL) {
+        QQIOT_LOGE("the parameter is incorrect");
         return ret;
     }
 
@@ -129,6 +138,7 @@ int32_t txd_tcp_recv(txd_socket_handler_t* sock, uint8_t* buf, uint32_t len, uin
     struct timeval timeout = {0, 0};
 
     if ((sock == NULL) || (buf == NULL)) {
+        QQIOT_LOGE("the parameter is incorrect");
         return ret;
     }
 
@@ -136,6 +146,7 @@ int32_t txd_tcp_recv(txd_socket_handler_t* sock, uint8_t* buf, uint32_t len, uin
     timeout.tv_usec = ((timeout_ms % 1000) * 1000);
 
     if (setsockopt(sock->fd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(struct timeval)) != 0) {
+        QQIOT_LOGE("set socket opt fail");
         return ret;
     }
 
@@ -158,6 +169,7 @@ int32_t txd_tcp_send(txd_socket_handler_t* sock, uint8_t* buf, uint32_t len, uin
     struct timeval timeout = {0, 0};
 
     if ((sock == NULL) || (buf == NULL)) {
+        QQIOT_LOGE("the parameter is incorrect");
         return ret;
     }
 
@@ -165,6 +177,7 @@ int32_t txd_tcp_send(txd_socket_handler_t* sock, uint8_t* buf, uint32_t len, uin
     timeout.tv_usec = ((timeout_ms % 1000) * 1000);
 
     if (setsockopt(sock->fd, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof(struct timeval)) != 0) {
+        QQIOT_LOGE("set socket opt fail");
         return ret;
     }
 
