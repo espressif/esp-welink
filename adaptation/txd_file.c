@@ -31,6 +31,9 @@
 #include "txd_stdapi.h"
 #include "txd_file.h"
 #include "txd_baseapi.h"
+#include "esp_qqiot_log.h"
+
+static const char* TAG = "txd_file";
 
 /*
  * 文件操作接口
@@ -56,27 +59,30 @@ txd_file_handler_t* txd_file_open(uint8_t* file_type, uint8_t* file_key, txd_fil
     txd_file_handler_t* file = (txd_file_handler_t*)txd_malloc(sizeof(txd_file_handler_t));
 
     if (!file) {
+        QQIOT_LOGE("malloc fail");
         return file;
     }
 
     memset(file, 0x0, sizeof(txd_file_handler_t));
 
     if (file_type) {
-        file->info.file_type_len = txd_strlen((char *)file_type);
+        file->info.file_type_len = txd_strlen((char*)file_type);
 
         if (file->info.file_type_len > sizeof(file->info.file_type)) {
             file->info.file_type_len = sizeof(file->info.file_type);
         }
 
-        strncpy((char *)(file->info.file_type), (char *)file_type, file->info.file_type_len);
+        strncpy((char*)(file->info.file_type), (char*)file_type, file->info.file_type_len);
     }
 
     if (!file_key || txd_strlen((char*)file_key) == 0) {
+        QQIOT_LOGD("the file_key is empty, need to generate it internal");
 #define TEMP_FILE_KEY_LENGTH 8
         temp_file_key = (uint8_t*)txd_malloc((TEMP_FILE_KEY_LENGTH + 1) * sizeof(uint8_t));
 
         if (temp_file_key == NULL) {
             txd_free(file);
+            QQIOT_LOGE("malloc fail");
             return NULL;
         }
 
@@ -86,6 +92,7 @@ txd_file_handler_t* txd_file_open(uint8_t* file_type, uint8_t* file_key, txd_fil
             if (count <= 0) {
                 txd_free(file);
                 txd_free(temp_file_key);
+                QQIOT_LOGE("generate file_key timeout");
                 return NULL;
             }
 
@@ -102,25 +109,27 @@ txd_file_handler_t* txd_file_open(uint8_t* file_type, uint8_t* file_key, txd_fil
                     file->info.file_key_len = sizeof(file->info.file_key);
                 }
 
-                strncpy((char *)(file->info.file_key), (char *)temp_file_key, file->info.file_key_len);
+                strncpy((char*)(file->info.file_key), (char*)temp_file_key, file->info.file_key_len);
                 txd_free(temp_file_key);
+                QQIOT_LOGD("generate file_key success: %s", (char*)(file->info.file_key));
                 break;
             }
         } while (1);
     } else {
-        file->info.file_key_len = txd_strlen((char *)(file->info.file_key));
+        file->info.file_key_len = txd_strlen((char*)(file->info.file_key));
 
         if (file->info.file_key_len > sizeof(file->info.file_key)) {
             file->info.file_key_len = sizeof(file->info.file_key);
         }
 
-        strncpy((char *)(file->info.file_key), (char *)file_key, file->info.file_key_len);
+        strncpy((char*)(file->info.file_key), (char*)file_key, file->info.file_key_len);
     }
 
     filename = (char*)txd_malloc(file->info.file_key_len + 1);
 
     if (!filename) {
         txd_free(file);
+        QQIOT_LOGE("malloc fail");
         return NULL;
     }
 
@@ -146,6 +155,7 @@ txd_file_handler_t* txd_file_open(uint8_t* file_type, uint8_t* file_key, txd_fil
         if (stat(filename, &statbuf) < 0) {
             txd_free(file);
             txd_free(filename);
+            QQIOT_LOGE("get file information fail");
             return NULL;
         }
 
@@ -153,6 +163,7 @@ txd_file_handler_t* txd_file_open(uint8_t* file_type, uint8_t* file_key, txd_fil
     } else {
         txd_free(file);
         txd_free(filename);
+        QQIOT_LOGE("file->fp is NULL");
         return NULL;
     }
 
@@ -171,6 +182,7 @@ int32_t txd_file_read(txd_file_handler_t* file, uint8_t* buf, uint32_t n)
     int32_t realRead = -1;
 
     if ((file == NULL) || (buf == NULL) || (txd_strlen((char*)(file->info.file_key)) == 0) || (file->fp == NULL)) {
+        QQIOT_LOGE("the parameter is incorrect");
         return realRead;
     }
 
@@ -190,6 +202,7 @@ int32_t txd_file_write(txd_file_handler_t* file, uint8_t* buf, uint32_t n)
     int32_t realWrite = -1;
 
     if ((file == NULL) || (buf == NULL) || (txd_strlen((char*)(file->info.file_key)) == 0) || (file->fp == NULL)) {
+        QQIOT_LOGE("the parameter is incorrect");
         return realWrite;
     }
 
@@ -209,12 +222,14 @@ int32_t txd_file_get_info(txd_file_handler_t* file, txd_file_info_t* info)
     char* filename = NULL;
 
     if ((file == NULL) || (info == NULL) || (file->info.file_key == NULL)) {
+        QQIOT_LOGE("the parameter is incorrect");
         return ret;
     }
 
     filename = (char*)txd_malloc(file->info.file_key_len + 1);
 
     if (!filename) {
+        QQIOT_LOGE("malloc fail");
         return ret;
     }
 
@@ -224,6 +239,7 @@ int32_t txd_file_get_info(txd_file_handler_t* file, txd_file_info_t* info)
 
     if (stat(filename, &statbuf) < 0) {
         txd_free(filename);
+        QQIOT_LOGE("get file information fail");
         return ret;
     }
 
@@ -232,8 +248,7 @@ int32_t txd_file_get_info(txd_file_handler_t* file, txd_file_info_t* info)
     info->file_size = statbuf.st_size;
     memcpy(info, &file->info, sizeof(*info));
 
-    ret = 0;
-    return ret;
+    return 0;
 }
 
 /*
@@ -246,6 +261,7 @@ int32_t txd_file_seek(txd_file_handler_t* file, uint32_t pos)
     int32_t ret = -1;
 
     if ((file == NULL) || (file->fp == NULL)) {
+        QQIOT_LOGE("the parameter is incorrect");
         return ret;
     }
 
@@ -274,6 +290,7 @@ int32_t txd_file_close(txd_file_handler_t* file)
     int32_t ret = -1;
 
     if ((file == NULL) || (file->fp == NULL)) {
+        QQIOT_LOGE("the parameter is incorrect");
         return ret;
     }
 
@@ -296,6 +313,7 @@ int32_t txd_file_remove(uint8_t* file_key)
     char* filename = (char*)txd_malloc(txd_strlen((char*)file_key) + 1);
 
     if (!filename) {
+        QQIOT_LOGE("malloc fail");
         return ret;
     }
 

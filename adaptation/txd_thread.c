@@ -29,7 +29,9 @@
 
 #include "txd_baseapi.h"
 #include "txd_thread.h"
+#include "esp_qqiot_log.h"
 
+static const char* TAG = "txd_thread";
 
 struct txd_thread_handler_t {
     TaskHandle_t xHandle;
@@ -57,15 +59,17 @@ txd_thread_handler_t* txd_thread_create(uint8_t priority,
     txd_thread_handler_t* threader_hd = (txd_thread_handler_t*)txd_malloc(sizeof(txd_thread_handler_t));
 
     if (threader_hd == NULL) {
+        QQIOT_LOGE("malloc fail");
         return threader_hd;
     }
 
     memset(threader_hd, 0, sizeof(txd_thread_handler_t));
     threader_hd->txd_thread_cb = callback;
 
-    if (xTaskCreate(callback, "qq_iot_task", stack_size/sizeof(portSTACK_TYPE), arg, priority, &(threader_hd->xHandle)) != pdTRUE) {
+    if (xTaskCreate(callback, "qq_iot_task", stack_size / sizeof(portSTACK_TYPE), arg, priority, &(threader_hd->xHandle)) != pdTRUE) {
         txd_free(threader_hd);
         threader_hd = NULL;
+        QQIOT_LOGE("thread create fail");
     }
 
     return threader_hd;
@@ -82,6 +86,7 @@ int32_t txd_thread_destroy(txd_thread_handler_t* thread)
     int32_t ret = -1;
 
     if (thread == NULL) {
+        QQIOT_LOGE("the parameter is incorrect");
         return ret;
     }
 
@@ -100,6 +105,7 @@ txd_mutex_handler_t* txd_mutex_create()
     txd_mutex_handler_t* mutex = (txd_mutex_handler_t*)txd_malloc(sizeof(txd_mutex_handler_t));
 
     if (mutex == NULL) {
+        QQIOT_LOGE("malloc fail");
         return mutex;
     }
 
@@ -108,6 +114,7 @@ txd_mutex_handler_t* txd_mutex_create()
     if (mutex->xHandle == NULL) {
         txd_free(mutex);
         mutex = NULL;
+        QQIOT_LOGE("create Mutex fail");
     }
 
     return mutex;
@@ -122,11 +129,14 @@ txd_mutex_handler_t* txd_mutex_create()
 int32_t txd_mutex_lock(txd_mutex_handler_t* mutex)
 {
     int32_t ret = -1;
+
     if ((mutex == NULL) || (mutex->xHandle == NULL)) {
+        QQIOT_LOGE("the parameter is incorrect");
         return ret;
     }
 
     if (xSemaphoreTake(mutex->xHandle, portMAX_DELAY) == pdTRUE) {
+        QQIOT_LOGE("lock Mutex fail");
         ret = 0;
     }
 
@@ -144,10 +154,12 @@ int32_t txd_mutex_unlock(txd_mutex_handler_t* mutex)
     int32_t ret = -1;
 
     if ((mutex == NULL) || (mutex->xHandle == NULL)) {
+        QQIOT_LOGE("the parameter is incorrect");
         return ret;
     }
 
     if (xSemaphoreGive(mutex->xHandle) == pdTRUE) {
+        QQIOT_LOGE("unlock Mutex fail");
         ret = 0;
     }
 
@@ -163,6 +175,7 @@ int32_t txd_mutex_unlock(txd_mutex_handler_t* mutex)
 int32_t txd_mutex_destroy(txd_mutex_handler_t* mutex)
 {
     if ((mutex == NULL) || (mutex->xHandle == NULL)) {
+        QQIOT_LOGE("the parameter is incorrect");
         return -1;
     }
 
