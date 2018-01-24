@@ -34,7 +34,7 @@
 #include "esp_qqiot_log.h"
 
 static const char* TAG = "txd_file";
-
+#define ESP_FATFS_BASE_PATH "/fatfs"
 /*
  * 文件操作接口
  */
@@ -42,6 +42,73 @@ struct txd_file_handler_t {
     FILE* fp;
     txd_file_info_t info;
 };
+
+/************************** store接口 接入厂商实现*****************************/
+/*
+ * 持久化数据时，SDK不关心具体写到哪一个文件，
+ * 但是要保证在读取的时候能够读取到相应的数据。
+ * 建议每个配对的读写函数对应不同的文件。
+ * 目前这里读写本地存储1k，开发者在flash里开辟一块1k的存储即可
+ */
+
+/*
+ * 将设备的基础信息持久化，即将buf指针所指的内存写入count个字节到文件中，
+ * 返回实际写入的字节数，有错误发生则返回-1
+ */
+int32_t txd_write_basicinfo(uint8_t* buf, uint32_t count)
+{
+    int32_t ret = -1;
+    char* filename = (char*)txd_malloc(strlen(ESP_FATFS_BASE_PATH) + strlen("esp32_tencent_basicinfo") + 2);
+
+    if (filename == NULL) {
+        QQIOT_LOGE("malloc fail");
+        return ret;
+    }
+
+    sprintf((char*)filename, "%s/%s", ESP_FATFS_BASE_PATH, "esp32_tencent_basicinfo");
+    FILE* f = fopen(filename, "wb");
+
+    if (f == NULL) {
+        QQIOT_LOGE("fopen fail");
+        txd_free(filename);
+        return ret;
+    }
+
+    ret = fwrite(buf, 1, count, f);
+    fclose(f);
+    txd_free(filename);
+    return ret;
+}
+
+/*
+ * 读取已经持久化的设备基础信息，读取count个字节到buf指针所指的内存中，
+ * 返回实际读入的字节数，有错误发生则返回-1
+ */
+int32_t txd_read_basicinfo(uint8_t* buf, uint32_t count)
+{
+    int32_t ret = -1;
+    char* filename = (char*)txd_malloc(strlen(ESP_FATFS_BASE_PATH) + strlen("esp32_tencent_basicinfo") + 2);
+
+    if (filename == NULL) {
+        QQIOT_LOGE("malloc fail");
+        return ret;
+    }
+
+    sprintf((char*)filename, "%s/%s", ESP_FATFS_BASE_PATH, "esp32_tencent_basicinfo");
+
+    FILE* f = fopen(filename, "rb");
+
+    if (f == NULL) {
+        QQIOT_LOGE("fopen fail");
+        txd_free(filename);
+        return ret;
+    }
+
+    ret = fread(buf, 1, count, f);
+    txd_free(filename);
+    fclose(f);
+    return ret;
+}
 
 /************************ file 接口 *********************************/
 /*
@@ -125,7 +192,7 @@ txd_file_handler_t* txd_file_open(uint8_t* file_type, uint8_t* file_key, txd_fil
         strncpy((char*)(file->info.file_key), (char*)file_key, file->info.file_key_len);
     }
 
-    filename = (char*)txd_malloc(file->info.file_key_len + 1);
+    filename = (char*)txd_malloc(file->info.file_key_len + strlen(ESP_FATFS_BASE_PATH) + 2);
 
     if (!filename) {
         txd_free(file);
@@ -133,7 +200,7 @@ txd_file_handler_t* txd_file_open(uint8_t* file_type, uint8_t* file_key, txd_fil
         return NULL;
     }
 
-    memcpy(filename, file->info.file_key, file->info.file_key_len);
+    sprintf((char*)filename, "%s/%s", ESP_FATFS_BASE_PATH, file->info.file_key);
 
     switch (mode) {
         case fmode_r:
@@ -226,14 +293,14 @@ int32_t txd_file_get_info(txd_file_handler_t* file, txd_file_info_t* info)
         return ret;
     }
 
-    filename = (char*)txd_malloc(file->info.file_key_len + 1);
+    filename = (char*)txd_malloc(file->info.file_key_len + strlen(ESP_FATFS_BASE_PATH) + 2);
 
     if (!filename) {
         QQIOT_LOGE("malloc fail");
         return ret;
     }
 
-    memcpy(filename, file->info.file_key, file->info.file_key_len);
+    sprintf((char*)filename, "%s/%s", ESP_FATFS_BASE_PATH, file->info.file_key);
 
     struct stat statbuf;
 
@@ -310,13 +377,21 @@ int32_t txd_file_close(txd_file_handler_t* file)
 int32_t txd_file_remove(uint8_t* file_key)
 {
     int32_t ret = -1;
-    char* filename = (char*)txd_malloc(txd_strlen((char*)file_key) + 1);
+    char* filename = NULL;
+
+    if (!file_key) {
+        QQIOT_LOGE("the parameter is incorrect");
+        return ret;
+    }
+
+    filename = (char*)txd_malloc(file->info.file_key_len + strlen(ESP_FATFS_BASE_PATH) + 2);
 
     if (!filename) {
         QQIOT_LOGE("malloc fail");
         return ret;
     }
 
+    sprintf((char*)filename, "%s/%s", ESP_FATFS_BASE_PATH, file->info.file_key);
     ret = remove(filename);
     txd_free(filename);
     return ret;

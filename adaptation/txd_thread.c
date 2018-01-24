@@ -136,7 +136,7 @@ int32_t txd_mutex_lock(txd_mutex_handler_t* mutex)
     }
 
     if (xSemaphoreTake(mutex->xHandle, portMAX_DELAY) == pdTRUE) {
-        QQIOT_LOGE("lock Mutex fail");
+        QQIOT_LOGI("Mutex lock");
         ret = 0;
     }
 
@@ -159,7 +159,7 @@ int32_t txd_mutex_unlock(txd_mutex_handler_t* mutex)
     }
 
     if (xSemaphoreGive(mutex->xHandle) == pdTRUE) {
-        QQIOT_LOGE("unlock Mutex fail");
+        QQIOT_LOGI("Mutex unlock");
         ret = 0;
     }
 
