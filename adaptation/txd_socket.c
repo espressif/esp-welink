@@ -23,6 +23,8 @@
  */
 
 #include <sys/socket.h>
+#include <sys/errno.h>
+#include "netdb.h"
 #include "txd_baseapi.h"
 #include "esp_qqiot_log.h"
 
@@ -77,6 +79,7 @@ int32_t txd_tcp_connect(txd_socket_handler_t* sock, uint8_t* ip, uint16_t port, 
 
     if (setsockopt(sock->fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) != 0) {
         QQIOT_LOGE("set socket opt fail");
+        close(sock->fd);
         return ret;
     }
 
@@ -85,6 +88,7 @@ int32_t txd_tcp_connect(txd_socket_handler_t* sock, uint8_t* ip, uint16_t port, 
 
     if (setsockopt(sock->fd, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof(struct timeval)) != 0) {
         QQIOT_LOGE("set socket opt fail");
+        close(sock->fd);
         return ret;
     }
 
@@ -92,10 +96,77 @@ int32_t txd_tcp_connect(txd_socket_handler_t* sock, uint8_t* ip, uint16_t port, 
     addr.sin_port = htons(port);
     inet_aton((char*)ip, &(addr.sin_addr.s_addr));
 
-    if (connect(sock->fd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+    if (connect(sock->fd, (struct sockaddr*)&addr, sizeof(addr)) != 0) {
         QQIOT_LOGE("socket connect fail");
         return ret;
     }
+
+    QQIOT_LOGI("socket connect success");
+    return 0;
+}
+
+/**  使用域名连接服务器
+ * @param sock tcp_socket
+ * @param dns 服务器的域名地址，以'\0'结尾的字符串，比如："devicemsf.3g.qq.com"
+ * @param port 服务器的端口号，此处为本机字节序，使用时需转成网络字节序
+ * @param timeout_ms 超时时间，单位：毫秒
+ *
+ * @return 0 表示连接成功
+ *         -1 表示连接失败
+ */
+int32_t txd_tcp_connect_dns(txd_socket_handler_t* sock, uint8_t* dns, uint16_t port, uint32_t timeout_ms)
+{
+    int opt = 1;
+    int32_t ret = -1;
+    struct sockaddr_in addr;
+    struct hostent* hptr = NULL;
+    ip_addr_t ip_address;
+    struct timeval timeout = {0, 0};
+
+    if ((sock == NULL) || (dns == NULL)) {
+        QQIOT_LOGE("the parameter is incorrect");
+        return ret;
+    }
+
+    sock->fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+    if (sock->fd < 0) {
+        QQIOT_LOGE("create socket fail");
+        return ret;
+    }
+
+    if (setsockopt(sock->fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) != 0) {
+        QQIOT_LOGE("set socket opt fail");
+        close(sock->fd);
+        return ret;
+    }
+
+    timeout.tv_sec = (timeout_ms / 1000);
+    timeout.tv_usec = ((timeout_ms % 1000) * 1000);
+
+    if (setsockopt(sock->fd, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof(struct timeval)) != 0) {
+        QQIOT_LOGE("set socket opt fail");
+        close(sock->fd);
+        return ret;
+    }
+
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+
+    if ((hptr = gethostbyname((char*)dns)) == NULL) {
+        QQIOT_LOGE("gethostbyname fail");
+        return ret;
+    }
+
+    ip_address = *(ip_addr_t*)hptr->h_addr_list[0];
+    addr.sin_addr.s_addr = ip_address.u_addr.ip4.addr;
+
+    if (connect(sock->fd, (struct sockaddr*)&addr, sizeof(addr)) != 0) {
+        QQIOT_LOGE("socket connect fail - DNS");
+        return ret;
+    }
+
+    QQIOT_LOGI("socket connect success - DNS");
 
     return 0;
 }
@@ -135,6 +206,8 @@ int32_t txd_tcp_disconnect(txd_socket_handler_t* sock)
 int32_t txd_tcp_recv(txd_socket_handler_t* sock, uint8_t* buf, uint32_t len, uint32_t timeout_ms)
 {
     int32_t ret = -1;
+    int32_t optval = 0;
+    socklen_t optlen = 0;
     struct timeval timeout = {0, 0};
 
     if ((sock == NULL) || (buf == NULL)) {
@@ -150,7 +223,19 @@ int32_t txd_tcp_recv(txd_socket_handler_t* sock, uint8_t* buf, uint32_t len, uin
         return ret;
     }
 
-    return recv(sock->fd, buf, len, 0);
+    ret = recv(sock->fd, buf, len, 0);
+
+    if (ret == -1) {
+        optlen = sizeof(optval);
+
+        if (getsockopt(sock->fd, SOL_SOCKET, SO_ERROR, &optval, &optlen) == 0) {
+            if (optval == EAGAIN) {
+                return 0;
+            }
+        }
+    }
+
+    return ret;
 }
 
 /**  发送数据
@@ -192,9 +277,12 @@ int32_t txd_tcp_send(txd_socket_handler_t* sock, uint8_t* buf, uint32_t len, uin
  */
 int32_t txd_tcp_socket_destroy(txd_socket_handler_t* sock)
 {
+    int32_t ret = -1;
+
     if (sock) {
+        ret = close(sock->fd);
         txd_free(sock);
     }
 
-    return 0;
+    return ret;
 }
