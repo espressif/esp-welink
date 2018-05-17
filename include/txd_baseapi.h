@@ -36,7 +36,7 @@ SDK_API extern void* txd_malloc(uint32_t size);
 /**  释放内存，同 free
  * @param p txd_malloc返回的指针
  */
-SDK_API extern void txd_free(void* p);
+SDK_API extern void txd_free(void *p);
 
 
 
@@ -54,7 +54,7 @@ SDK_API extern void txd_free(void* p);
  *
  * @return 实际写入的字节数，有错误发生则返回-1
  */
-SDK_API extern int32_t txd_write_basicinfo(uint8_t* buf, uint32_t len);
+SDK_API extern int32_t txd_write_basicinfo(uint8_t *buf, uint32_t len);
 
 
 /** 读取已经持久化的设备基础信息
@@ -64,7 +64,7 @@ SDK_API extern int32_t txd_write_basicinfo(uint8_t* buf, uint32_t len);
  *
  * @return 实际读到的字节数，有错误发生则返回-1
  */
-SDK_API extern int32_t txd_read_basicinfo(uint8_t* buf, uint32_t len);
+SDK_API extern int32_t txd_read_basicinfo(uint8_t *buf, uint32_t len);
 
 
 
@@ -105,7 +105,7 @@ SDK_API extern txd_socket_handler_t* txd_tcp_socket_create();
  * @return 0 表示连接成功
  *         -1 表示连接失败
  */
-SDK_API extern int32_t txd_tcp_connect(txd_socket_handler_t* sock, uint8_t* ip, uint16_t port, uint32_t timeout_ms);
+SDK_API extern int32_t txd_tcp_connect(txd_socket_handler_t *sock, uint8_t *ip, uint16_t port, uint32_t timeout_ms);
 
 /**  使用域名连接服务器
  * @param sock tcp_socket
@@ -116,7 +116,7 @@ SDK_API extern int32_t txd_tcp_connect(txd_socket_handler_t* sock, uint8_t* ip, 
  * @return 0 表示连接成功
  *         -1 表示连接失败
  */
-SDK_API extern int32_t txd_tcp_connect_dns(txd_socket_handler_t* sock, uint8_t* dns, uint16_t port, uint32_t timeout_ms);
+SDK_API extern int32_t txd_tcp_connect_dns(txd_socket_handler_t *sock, uint8_t *dns, uint16_t port, uint32_t timeout_ms);
 
 
 /**  断开连接
@@ -126,7 +126,7 @@ SDK_API extern int32_t txd_tcp_connect_dns(txd_socket_handler_t* sock, uint8_t* 
  * @return 0 表示成功
  *         -1 表示失败
  */
-SDK_API extern int32_t txd_tcp_disconnect(txd_socket_handler_t* sock);
+SDK_API extern int32_t txd_tcp_disconnect(txd_socket_handler_t *sock);
 
 
 /**  接收数据
@@ -140,7 +140,7 @@ SDK_API extern int32_t txd_tcp_disconnect(txd_socket_handler_t* sock);
  *         0 表示在timeout_ms时间内没有收到数据，属于正常情况
  *         正数 表示收到的字节数
  */
-SDK_API extern int32_t txd_tcp_recv(txd_socket_handler_t* sock, uint8_t* buf, uint32_t len, uint32_t timeout_ms);
+SDK_API extern int32_t txd_tcp_recv(txd_socket_handler_t *sock, uint8_t *buf, uint32_t len, uint32_t timeout_ms);
 
 
 /**  发送数据
@@ -153,7 +153,7 @@ SDK_API extern int32_t txd_tcp_recv(txd_socket_handler_t* sock, uint8_t* buf, ui
  *         0 表示再timeout_ms时间内没有将数据发送出去
  *         正数 表示发送的字节数
  */
-SDK_API extern int32_t txd_tcp_send(txd_socket_handler_t* sock, uint8_t* buf, uint32_t len, uint32_t timeout_ms);
+SDK_API extern int32_t txd_tcp_send(txd_socket_handler_t *sock, uint8_t *buf, uint32_t len, uint32_t timeout_ms);
 
 
 /**  销毁tcp socket
@@ -162,7 +162,7 @@ SDK_API extern int32_t txd_tcp_send(txd_socket_handler_t* sock, uint8_t* buf, ui
  * @return 0 表示成功
  *         -1 表示失败
  */
-SDK_API extern int32_t txd_tcp_socket_destroy(txd_socket_handler_t* sock);
+SDK_API extern int32_t txd_tcp_socket_destroy(txd_socket_handler_t *sock);
 
 
 

@@ -29,7 +29,7 @@ extern "C" {
 #endif
 
 typedef struct {
-    uint8_t buf[8];
+	uint8_t buf[8];
 } txd_uint64_t;
 
 
@@ -37,7 +37,7 @@ typedef struct {
  * @param u64 入参，txd_uint64_t类型
  * @param str 出参，字符串类型
  */
-SDK_API void txd_uint64_to_str(const txd_uint64_t* u64, uint8_t str[21]);
+SDK_API void txd_uint64_to_str(const txd_uint64_t *u64, uint8_t str[21]);
 
 #ifdef _CO_WEIWEN_XT_XCC_
 typedef  long long int int64_t;
