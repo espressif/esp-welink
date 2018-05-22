@@ -14,9 +14,9 @@ extern "C" {
  * global result code
  */
 typedef enum {
-    err_success                                 = 0x00000000,     //succeed
-    err_failed                                  = 0x00000001,     //failed
-    err_unknown                                 = 0x00000002,     //未知错误
+	err_success                                 = 0x00000000,     //succeed
+ 	err_failed                                  = 0x00000001,     //failed
+   	err_unknown                                 = 0x00000002,     //未知错误
     err_invalid_param                           = 0x00000003,     //参数非法
 
     //for check init device param
