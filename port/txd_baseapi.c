@@ -36,10 +36,19 @@
 #include "netdb.h"
 #include "txd_stdtypes.h"
 #include "txd_baseapi.h"
-#include "esp32_welink_log.h"
+#include "esp_welink_log.h"
+#include "nvs_flash.h"
 
 static const char* TAG = "txd_baseapi";
-#define ESP_FATFS_BASE_PATH "/fatfs"
+
+#if CONFIG_TARGET_PLATFORM_ESP8266
+extern unsigned xthal_get_ccount(void);
+
+static uint32_t IRAM_ATTR esp_log_early_timestamp()
+{
+    return xthal_get_ccount() / (80 * 1000);
+}
+#endif
 
 /************************ memory接口 接入厂商实现*********************************/
 /*
@@ -78,27 +87,22 @@ void txd_free(void* p)
  */
 int32_t txd_write_basicinfo(uint8_t* buf, uint32_t count)
 {
+    nvs_handle my_handle;
     int32_t ret = -1;
-    char* filename = (char*)txd_malloc(strlen(ESP_FATFS_BASE_PATH) + strlen("esp32_tencent_basicinfo") + 2);
 
-    if (filename == NULL) {
-        WELINK_LOGE("malloc fail");
+    if(nvs_open("storage", NVS_READWRITE, &my_handle) != ESP_OK){
+        WELINK_LOGE("nvs open fail");
         return ret;
     }
 
-    sprintf((char*)filename, "%s/%s", ESP_FATFS_BASE_PATH, "esp32_tencent_basicinfo");
-    FILE* f = fopen(filename, "wb");
-
-    if (f == NULL) {
-        WELINK_LOGE("fopen fail");
-        txd_free(filename);
+    if (nvs_set_blob(my_handle, "storage", buf, count) != ESP_OK) {
+        WELINK_LOGE("write welink basic info fail");
+        nvs_close(my_handle);
         return ret;
     }
 
-    ret = fwrite(buf, 1, count, f);
-    fclose(f);
-    txd_free(filename);
-    return ret;
+    nvs_close(my_handle);
+    return count;
 }
 
 /** 读取已经持久化的设备基础信息
@@ -110,28 +114,22 @@ int32_t txd_write_basicinfo(uint8_t* buf, uint32_t count)
  */
 int32_t txd_read_basicinfo(uint8_t* buf, uint32_t count)
 {
-    int32_t ret = -1;
-    char* filename = (char*)txd_malloc(strlen(ESP_FATFS_BASE_PATH) + strlen("esp32_tencent_basicinfo") + 2);
+    nvs_handle my_handle;
+    uint32_t len = count;
 
-    if (filename == NULL) {
-        WELINK_LOGE("malloc fail");
-        return ret;
+    if(nvs_open("storage", NVS_READWRITE, &my_handle) != ESP_OK){
+        WELINK_LOGE("nvs open fail");
+        return -1;
     }
 
-    sprintf((char*)filename, "%s/%s", ESP_FATFS_BASE_PATH, "esp32_tencent_basicinfo");
-
-    FILE* f = fopen(filename, "rb");
-
-    if (f == NULL) {
-        WELINK_LOGE("fopen fail");
-        txd_free(filename);
-        return ret;
+    if (nvs_get_blob(my_handle, "storage", buf, &len) != ESP_OK) {
+        WELINK_LOGE("read welink basic info fail");
+        nvs_close(my_handle);
+        return -1;
     }
 
-    ret = fread(buf, 1, count, f);
-    txd_free(filename);
-    fclose(f);
-    return ret;
+    nvs_close(my_handle);
+    return len;
 }
 
 /************************ time接口 接入厂商实现 *********************************/

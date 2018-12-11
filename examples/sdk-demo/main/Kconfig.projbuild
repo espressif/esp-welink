@@ -1,0 +1,33 @@
+menu "Welink Configuration"
+
+config WELINK_WiFi_SSID
+    string "WiFi SSID"
+    default "HUAWEI001"
+    help
+        wifi ssid
+
+config WELINK_WiFi_PASSWORD
+    string "WiFi PASSWORD"
+    default "espressif"
+    help
+        wifi password
+
+config WELINK_PID
+    int "pid"
+    default 1700005325
+    help
+        You need to the official website of Welink to get this parameter
+
+config WELINK_SN
+    string "welink sn"
+    default "FE2722F7B161494c"
+    help
+        You need to the official website of Welink to get this parameter
+
+config WELINK_LICENSE
+    string "welink license"
+    default "304502206D4A274CBF6BC2F43A2FAAD57BF98A153F3F1EE47EEE1AE171D5A3ED8C7C1260022100E61FFB7ADD86E2C1821CD38566A93A0395D70E6A5796FDD544133D80CBE3E9F4"
+    help
+        You need to the official website of Welink to get this parameter
+
+endmenu

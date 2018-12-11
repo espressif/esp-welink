@@ -23,11 +23,12 @@
  */
 
 #include <string.h>
+
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <freertos/semphr.h>
 
-#include "esp32_welink_log.h"
+#include "esp_welink_log.h"
 #include "txd_stdtypes.h"
 #include "txd_baseapi.h"
 #include "txd_stdapi.h"
@@ -137,7 +138,7 @@ int32_t txd_mutex_lock(txd_mutex_handler_t* mutex)
     }
 
     if (xSemaphoreTake(mutex->xHandle, portMAX_DELAY) == pdTRUE) {
-        WELINK_LOGI("Mutex lock");
+//        WELINK_LOGI("Mutex lock");
         ret = 0;
     }
 
@@ -160,7 +161,7 @@ int32_t txd_mutex_unlock(txd_mutex_handler_t* mutex)
     }
 
     if (xSemaphoreGive(mutex->xHandle) == pdTRUE) {
-        WELINK_LOGI("Mutex unlock");
+//        WELINK_LOGI("Mutex unlock");
         ret = 0;
     }
 
