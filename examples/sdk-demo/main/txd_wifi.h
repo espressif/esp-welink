@@ -22,57 +22,17 @@
  *
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include "txd_stdapi.h"
+#ifndef __TXD_WIFI_H__
+#define __TXD_WIFI_H__
 
-/*****************************************头文件说明******************************************/
-/*
- * sdk依赖的C库，此文件内的每个接口接入厂商必须实现，否则链接不过,请参考demo
- */
-/*********************************************************************************************/
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+void esp_wifi_handler(void);
 
-void txd_memcpy(void* dest, const void* src, uint32_t n)
-{
-    memcpy(dest, src, n);
+#ifdef __cplusplus
 }
+#endif
 
-void txd_memset(void* p, int c, uint32_t n)
-{
-    memset(p, c, n);
-}
-
-int32_t txd_memcmp(const void* p1, const void* p2, uint32_t n)
-{
-    return memcmp(p1, p2, n);
-}
-
-uint32_t txd_strlen(const char* s)
-{
-    return strlen(s);
-}
-
-int32_t txd_atoi(const char* s)
-{
-    return atoi(s);
-}
-
-int32_t txd_vsnprintf(char* s, uint32_t size, const char* template, va_list ap)
-{
-    return vsnprintf(s, size, template, ap);
-}
-
-int32_t txd_printf(const char* template, ...)
-{
-    int32_t ret = 0;
-
-    va_list args;
-    va_start(args, template);
-    ret = vprintf(template, args);
-    va_end(args);
-    return ret;
-}
-
+#endif/*!< __TXD_WIFI_H__ */
